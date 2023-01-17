@@ -1,0 +1,12 @@
+[submodule "bad-bpf"]
+	path = bad-bpf
+	url = https://github.com/pathtofile/bad-bpf
+[submodule "ebpfkit"]
+	path = ebpfkit
+	url = https://github.com/Gui774ume/ebpfkit
+[submodule "boopkit"]
+	path = boopkit
+	url = https://github.com/krisnova/boopkit
+[submodule "TripleCross"]
+	path = TripleCross
+	url = https://github.com/h3xduck/TripleCross
